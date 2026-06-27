@@ -1,0 +1,26 @@
+{
+  "name": "collab-editor-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Custom WebSocket + REST backend for the collaborative document editor",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node test/sync.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "lib0": "^0.2.97",
+    "ws": "^8.18.0",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.18"
+  },
+  "devDependencies": {
+    "y-websocket": "^2.1.0"
+  }
+}

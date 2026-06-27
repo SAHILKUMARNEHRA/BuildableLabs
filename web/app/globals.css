@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply font-sans text-slate-800 antialiased;
+  /* Soft, Apple-like multi-stop gradient backdrop that the glass sits on top of. */
+  background:
+    radial-gradient(1200px 800px at 10% 0%, #e8e4ff 0%, transparent 55%),
+    radial-gradient(1000px 700px at 100% 10%, #ffe4f1 0%, transparent 50%),
+    radial-gradient(900px 900px at 50% 100%, #dbeafe 0%, transparent 55%),
+    linear-gradient(160deg, #f5f3ff 0%, #eef2ff 40%, #faf5ff 100%);
+  background-attachment: fixed;
+}
+
+/* ---------------------------------------------------------------------------
+   Liquid glass surface
+   The core material: translucent fill, saturated backdrop blur, a bright top
+   inner highlight and a soft outer shadow — mirroring Apple's "Liquid Glass".
+   --------------------------------------------------------------------------- */
+.glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.25) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 32px rgba(31, 38, 135, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.glass-strong {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 20px 60px rgba(31, 38, 135, 0.22),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+/* A subtle specular sheen that sweeps across pill buttons on hover. */
+.glass-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.glass-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-sheen:hover::after {
+  transform: translateX(120%);
+}
+
+/* ---------------------------------------------------------------------------
+   TipTap / ProseMirror editor surface + remote collaborator cursors
+   --------------------------------------------------------------------------- */
+.ProseMirror {
+  min-height: 60vh;
+  outline: none;
+  line-height: 1.7;
+  font-size: 1.0625rem;
+  color: #1e293b;
+}
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+.ProseMirror h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.ProseMirror h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.25; }
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; }
+.ProseMirror ul { list-style: disc; padding-left: 1.25rem; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.25rem; }
+.ProseMirror blockquote {
+  border-left: 3px solid rgba(99, 102, 241, 0.5);
+  padding-left: 1rem;
+  color: #475569;
+  font-style: italic;
+}
+.ProseMirror code {
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 6px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.ProseMirror pre {
+  background: rgba(30, 41, 59, 0.92);
+  color: #f8fafc;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+/* Placeholder shown when the document is empty. */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Remote caret (from @tiptap/extension-collaboration-cursor). */
+.collaboration-cursor__caret {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 2px solid;
+  border-right: 0;
+  word-break: normal;
+  pointer-events: none;
+}
+.collaboration-cursor__label {
+  position: absolute;
+  top: -1.45em;
+  left: -1px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px 6px 6px 0;
+  white-space: nowrap;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Thin, modern scrollbars to match the glass aesthetic. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.5); background-clip: content-box; }
