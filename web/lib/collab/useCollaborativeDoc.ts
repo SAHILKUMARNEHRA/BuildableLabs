@@ -46,11 +46,19 @@ export function useCollaborativeDoc(documentId: string): CollaborationHandle {
     const ydoc = new Y.Doc();
     docRef.current = ydoc;
 
-    // 1. Offline-first: hydrate from IndexedDB before (and regardless of) the network.
-    const idb = new IndexeddbPersistence(`collab-doc-${documentId}`, ydoc);
-    idb.once('synced', () => {
-      if (!cancelled) setLocalLoaded(true);
-    });
+    // 1. Offline-first: hydrate from IndexedDB before (and regardless of) the
+    //    network. Guarded because IndexedDB can be unavailable (private mode,
+    //    storage disabled) — a failure here must never crash the editor.
+    let idb: IndexeddbPersistence | null = null;
+    try {
+      idb = new IndexeddbPersistence(`collab-doc-${documentId}`, ydoc);
+      idb.once('synced', () => {
+        if (!cancelled) setLocalLoaded(true);
+      });
+    } catch (err) {
+      console.warn('[collab] local cache unavailable:', (err as Error).message);
+      setLocalLoaded(true);
+    }
 
     // 2. Connect to the custom WS backend with the user's access token so the
     //    server can authenticate and authorise the room.
@@ -61,15 +69,23 @@ export function useCollaborativeDoc(documentId: string): CollaborationHandle {
       } = await supabase.auth.getSession();
       if (cancelled || !session) return;
 
-      const provider = new WebsocketProvider(WS_URL, documentId, ydoc, {
-        params: { token: session.access_token },
-      });
-      providerRef.current = provider;
+      try {
+        const provider = new WebsocketProvider(WS_URL, documentId, ydoc, {
+          params: { token: session.access_token },
+        });
+        providerRef.current = provider;
 
-      provider.on('status', ({ status: s }: { status: string }) => {
-        if (cancelled) return;
-        setStatus(s === 'connected' ? 'connected' : 'disconnected');
-      });
+        provider.on('status', ({ status: s }: { status: string }) => {
+          if (cancelled) return;
+          setStatus(s === 'connected' ? 'connected' : 'disconnected');
+        });
+        // y-websocket surfaces connection errors here; we log and let it retry
+        // on its own rather than letting anything bubble up and crash React.
+        provider.on('connection-error', () => setStatus('disconnected'));
+      } catch (err) {
+        console.error('[collab] could not open realtime connection:', (err as Error).message);
+        setStatus('disconnected');
+      }
 
       setReady(true);
     }
@@ -79,7 +95,7 @@ export function useCollaborativeDoc(documentId: string): CollaborationHandle {
     return () => {
       cancelled = true;
       providerRef.current?.destroy();
-      idb.destroy();
+      idb?.destroy();
       ydoc.destroy();
       providerRef.current = null;
       docRef.current = null;

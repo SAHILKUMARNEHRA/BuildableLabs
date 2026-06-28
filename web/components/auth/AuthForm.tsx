@@ -54,26 +54,37 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     setLoading(true);
     const supabase = getSupabaseClient();
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
     try {
       if (isSignup) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-        });
+        // Create the account through our backend, which confirms it server-side
+        // (no confirmation email, no rate limit), then sign in immediately.
+        const res = await fetch(`${apiUrl}/api/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), password }),
+        }).catch(() => null);
 
-        if (error) {
-          const message = describeAuthError(error.message, 'signup');
+        const body = await res?.json().catch(() => ({}));
+
+        if (!res || !res.ok) {
+          const message = res
+            ? describeAuthError(body?.message, 'signup')
+            : 'Cannot reach the server. Please try again.';
           setError(message);
           toast(message, 'error');
           return;
         }
 
-        // If email confirmation is enabled, Supabase returns a user but no session.
-        if (data.user && !data.session) {
-          toast('Account created! Check your inbox to confirm your email.', 'success');
-          router.push('/login');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (signInError) {
+          const message = describeAuthError(signInError.message, 'signin');
+          setError(message);
+          toast(message, 'error');
           return;
         }
 

@@ -4,6 +4,7 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import { healthRouter } from './routes/health.js';
 import { documentsRouter } from './routes/documents.js';
+import { authRouter } from './routes/auth.js';
 import { attachWebSocketServer } from './ws/server.js';
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(
 app.use(express.json({ limit: '8mb' }));
 
 app.use('/health', healthRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/documents', documentsRouter);
 
 // Fallback 404 for unknown REST routes (keeps responses JSON, not HTML).
