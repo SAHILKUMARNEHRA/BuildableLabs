@@ -23,13 +23,13 @@ export function SelectionBubbleMenu({ editor }: { editor: Editor }) {
       editor={editor}
       tippyOptions={{ duration: 150 }}
       shouldShow={({ editor: e, from, to }) => from !== to && !e.isActive('image')}
-      className="glass-strong flex items-center gap-0.5 rounded-xl px-1 py-1 shadow-glass-lg"
+      className="flex items-center gap-0.5 rounded-xl border border-white/10 bg-slate-900/90 px-1 py-1 shadow-xl backdrop-blur-xl"
     >
       <Mark label="B" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} className="font-bold" />
       <Mark label="i" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} className="italic" />
       <Mark label="S" active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} className="line-through" />
       <Mark label="</>" active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()} />
-      <span className="mx-0.5 h-5 w-px bg-slate-300/60" />
+      <span className="mx-0.5 h-5 w-px bg-white/15" />
       <Mark label="🔗" active={editor.isActive('link')} onClick={setLink} />
     </BubbleMenu>
   );
@@ -52,7 +52,7 @@ function Mark({
       onClick={onClick}
       aria-pressed={active}
       className={`flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-sm transition
-        ${active ? 'bg-indigo-500 text-white' : 'text-slate-600 hover:bg-white/60'} ${className}`}
+        ${active ? 'bg-indigo-500 text-white' : 'text-slate-200 hover:bg-white/15 hover:text-white'} ${className}`}
     >
       {label}
     </button>

@@ -68,13 +68,13 @@ export function Toolbar({ editor, documentId, title, focusMode, onToggleFocus }:
   }
 
   return (
-    <div className="glass sticky top-[4.75rem] z-20 mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-1 rounded-2xl px-2 py-1.5">
+    <div className="sticky top-[4.75rem] z-20 mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/85 px-2 py-1.5 shadow-xl backdrop-blur-xl">
       <Group>
         <Btn label="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
-          ↶
+          <UndoIcon />
         </Btn>
         <Btn label="Redo" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
-          ↷
+          <RedoIcon />
         </Btn>
       </Group>
 
@@ -151,7 +151,27 @@ function Group({ children }: { children: React.ReactNode }) {
 }
 
 function Divider() {
-  return <span className="mx-1 h-5 w-px bg-slate-300/60" />;
+  return <span className="mx-1 h-5 w-px bg-white/15" />;
+}
+
+/** Horizontal "undo" curved arrow (points left). */
+function UndoIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H9" />
+    </svg>
+  );
+}
+
+/** Horizontal "redo" curved arrow (points right). */
+function RedoIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m15 14 5-5-5-5" />
+      <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H15" />
+    </svg>
+  );
 }
 
 interface BtnProps {
@@ -172,8 +192,8 @@ function Btn({ children, label, onClick, active = false, disabled = false }: Btn
       onClick={onClick}
       disabled={disabled}
       className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm transition
-        disabled:cursor-not-allowed disabled:opacity-30
-        ${active ? 'bg-indigo-500 text-white shadow' : 'text-slate-600 hover:bg-white/60'}`}
+        disabled:cursor-not-allowed disabled:opacity-25
+        ${active ? 'bg-indigo-500 text-white shadow' : 'text-slate-200 hover:bg-white/15 hover:text-white'}`}
     >
       {children}
     </button>
