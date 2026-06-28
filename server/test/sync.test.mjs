@@ -113,6 +113,23 @@ async function run() {
   );
   console.log('✓ late joiner received the existing document');
 
+  // 5. With THREE clients connected, every client must see all three in its
+  //    awareness (this is the presence the UI renders). Guards the bug where
+  //    only some collaborators showed up.
+  const seenBy = (client) =>
+    Array.from(client.provider.awareness.getStates().values())
+      .map((s) => s.user?.name)
+      .filter(Boolean)
+      .sort();
+  for (const [who, client] of [['Alice', alice], ['Bob', bob], ['Carol', carol]]) {
+    assert.deepStrictEqual(
+      seenBy(client),
+      ['Alice', 'Bob', 'Carol'],
+      `${who} should see all three editors, saw: ${seenBy(client)}`
+    );
+  }
+  console.log('✓ all three clients see all three editors in presence');
+
   alice.provider.destroy();
   bob.provider.destroy();
   carol.provider.destroy();

@@ -44,12 +44,10 @@ export function CollaboratorBar({ provider }: { provider: WebsocketProvider }) {
     return <span className="text-xs font-medium text-slate-400">You’re the only one here</span>;
   }
 
-  const caption =
-    others.length === 1
-      ? `${others[0].name} is editing`
-      : others.length === 2
-        ? `${others[0].name} and ${others[1].name} are editing`
-        : `${others[0].name} and ${others.length - 1} others are editing`;
+  // Name everyone who is editing (up to three), then collapse to "+N others".
+  // This keeps the caption consistent with the avatar stack instead of
+  // hiding everybody behind a single name.
+  const caption = buildCaption(others.map((o) => o.name));
 
   return (
     <div className="flex items-center gap-2.5">
@@ -73,4 +71,14 @@ export function CollaboratorBar({ provider }: { provider: WebsocketProvider }) {
       <span className="hidden text-xs font-medium text-slate-500 sm:inline">{caption}</span>
     </div>
   );
+}
+
+/** Builds a presence caption that names up to three editors before collapsing. */
+function buildCaption(names: string[]): string {
+  const verb = names.length === 1 ? 'is' : 'are';
+  if (names.length === 1) return `${names[0]} is editing`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are editing`;
+  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]} are editing`;
+  const extra = names.length - 3;
+  return `${names[0]}, ${names[1]}, ${names[2]} and ${extra} ${extra === 1 ? 'other' : 'others'} ${verb} editing`;
 }
