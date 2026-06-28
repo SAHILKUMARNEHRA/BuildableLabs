@@ -1,0 +1,23 @@
+# Render blueprint for the custom WebSocket + REST backend.
+# Render injects $PORT automatically and the server reads it (see config/env.js),
+# so we don't hardcode a port. Set the secret values in the Render dashboard.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
+services:
+  - type: web
+    name: collab-editor-server
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false # set in dashboard
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # set in dashboard (secret)
+      - key: SUPABASE_STORAGE_BUCKET
+        value: documents
+      - key: CORS_ORIGINS
+        sync: false # set to your deployed frontend URL, e.g. https://your-app.vercel.app

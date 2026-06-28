@@ -9,6 +9,7 @@ Built for the BuildableLabs Full-Stack Engineer assignment.
 
 > **Setup in 15 minutes:** follow **[SETUP.md](SETUP.md)** for click-by-click
 > Supabase + Google OAuth + run instructions.
+> **Deploying?** See **[DEPLOY.md](DEPLOY.md)** (Vercel + Render).
 
 ---
 
