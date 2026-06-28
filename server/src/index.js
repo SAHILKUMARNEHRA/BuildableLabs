@@ -14,7 +14,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+// Raised limit so base64-encoded image uploads fit (real cap is enforced in
+// the upload route and by the storage bucket's file_size_limit).
+app.use(express.json({ limit: '8mb' }));
 
 app.use('/health', healthRouter);
 app.use('/api/documents', documentsRouter);

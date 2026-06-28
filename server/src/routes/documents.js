@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { supabase } from '../config/supabase.js';
 import { requireAuth } from '../auth/verifyToken.js';
 import { canAccessDocument } from '../persistence/access.js';
+import { deleteDocumentState } from '../persistence/documentStore.js';
 
 /**
  * REST API for everything that is not real-time editing:
@@ -113,6 +114,33 @@ documentsRouter.patch('/:id', async (req, res) => {
   res.json({ document: data });
 });
 
+/** DELETE /api/documents/:id -> delete a document (owner only). */
+documentsRouter.delete('/:id', async (req, res) => {
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('id, owner_id')
+    .eq('id', req.params.id)
+    .maybeSingle();
+
+  if (!doc) {
+    return res.status(404).json({ error: 'not_found', message: 'Document not found.' });
+  }
+  if (doc.owner_id !== req.user.id) {
+    return res.status(403).json({ error: 'forbidden', message: 'Only the owner can delete this document.' });
+  }
+
+  // Remove the binary state from storage first, then the row (snapshots and
+  // collaborators cascade away via foreign keys).
+  await deleteDocumentState(req.params.id);
+  const { error } = await supabase.from('documents').delete().eq('id', req.params.id);
+
+  if (error) {
+    return res.status(500).json({ error: 'delete_failed', message: error.message });
+  }
+
+  res.json({ deleted: true });
+});
+
 /** POST /api/documents/:id/join -> add me as a collaborator. */
 documentsRouter.post('/:id/join', async (req, res) => {
   const documentId = req.params.id;
@@ -143,6 +171,44 @@ documentsRouter.post('/:id/join', async (req, res) => {
   }
 
   res.json({ joined: true });
+});
+
+/**
+ * POST /api/documents/:id/images -> upload an image and get its public URL.
+ *
+ * The browser sends a base64 data URL; we decode it, push it to the public
+ * "images" Supabase Storage bucket under the document's folder, and return the
+ * public URL for the editor to embed. This is the assignment's
+ * "File storage: Supabase Storage" in action, beyond the document snapshots.
+ */
+documentsRouter.post('/:id/images', async (req, res) => {
+  const allowed = await canAccessDocument(req.params.id, req.user.id);
+  if (!allowed) {
+    return res.status(403).json({ error: 'forbidden', message: 'You do not have access to this document.' });
+  }
+
+  const dataUrl = req.body?.dataUrl;
+  const match = typeof dataUrl === 'string' && dataUrl.match(/^data:(image\/(png|jpeg|jpg|gif|webp));base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ error: 'invalid_image', message: 'Expected a PNG, JPEG, GIF or WebP image.' });
+  }
+
+  const contentType = match[1];
+  const ext = match[2] === 'jpeg' ? 'jpg' : match[2];
+  const buffer = Buffer.from(match[3], 'base64');
+
+  if (buffer.length > 5 * 1024 * 1024) {
+    return res.status(413).json({ error: 'too_large', message: 'Images must be 5 MB or smaller.' });
+  }
+
+  const path = `${req.params.id}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from('images').upload(path, buffer, { contentType });
+  if (error) {
+    return res.status(500).json({ error: 'upload_failed', message: error.message });
+  }
+
+  const { data } = supabase.storage.from('images').getPublicUrl(path);
+  res.status(201).json({ url: data.publicUrl });
 });
 
 /** GET /api/documents/:id/history -> list snapshots, newest first. */

@@ -28,6 +28,10 @@ Built for the BuildableLabs Full-Stack Engineer assignment.
   error messages** for every failure case.
 - **Apple "Liquid Glass" UI** — frosted translucent surfaces, soft gradients,
   floating light, subtle motion.
+- **Rich editing** — bubble menu on selection, links, checklists, image upload
+  to Supabase Storage, word count, live save status, focus mode, and one-click
+  **export to Markdown**.
+- **Document management** — create, rename, delete, search, and share by link.
 
 ---
 

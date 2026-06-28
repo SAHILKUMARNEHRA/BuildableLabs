@@ -62,6 +62,20 @@ export async function saveDocumentState(documentId, ydoc) {
 }
 
 /**
+ * Removes a document's persisted binary state from storage. Database rows
+ * (the document row, snapshots, collaborators) are removed by the caller via
+ * cascading deletes; this just cleans up the Storage object so we don't leak
+ * orphaned files.
+ */
+export async function deleteDocumentState(documentId) {
+  const { error } = await supabase.storage.from(bucket).remove([storagePath(documentId)]);
+  // A missing object is fine — the document may never have been saved.
+  if (error) {
+    console.error(`[persistence] failed to delete state for ${documentId}:`, error.message);
+  }
+}
+
+/**
  * Stores a history snapshot so the document timeline can be browsed later.
  * Kept separate from the "latest state" save so we control how often history
  * grows (see the room's snapshot scheduling).

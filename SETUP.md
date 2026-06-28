@@ -56,11 +56,14 @@ and all the Row-Level-Security policies. It is safe to re-run.
 The binary document state is stored as files in Supabase Storage.
 
 1. Dashboard → **Storage → New bucket**.
-2. Name it exactly **`documents`**.
-3. Leave it **Private** (the backend accesses it with the service key). **Create**.
+2. Name it exactly **`documents`**, leave it **Private** (the backend accesses
+   it with the service key). **Create**.
+3. Create a second bucket named exactly **`images`**, and make this one
+   **Public** (embedded images need a public URL). **Create**.
 
-> If you choose a different bucket name, set `SUPABASE_STORAGE_BUCKET` in the
-> backend `.env` to match.
+> The `documents` bucket holds the binary document state; the `images` bucket
+> holds images uploaded into the editor. If you rename `documents`, set
+> `SUPABASE_STORAGE_BUCKET` in the backend `.env` to match.
 
 ---
 

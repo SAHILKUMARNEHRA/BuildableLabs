@@ -1,14 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
+import { exportToMarkdown } from '@/lib/editor/exportMarkdown';
+import { uploadImage } from '@/lib/editor/uploadImage';
+
+interface ToolbarProps {
+  editor: Editor;
+  documentId: string;
+  title: string;
+  focusMode: boolean;
+  onToggleFocus: () => void;
+}
 
 /**
  * Formatting toolbar for the editor. Buttons reflect the current selection's
  * active marks/nodes and include Yjs-powered undo/redo (the collaborative undo
  * stack, so you only ever undo *your own* changes — not your collaborators').
  */
-export function Toolbar({ editor }: { editor: Editor }) {
+export function Toolbar({ editor, documentId, title, focusMode, onToggleFocus }: ToolbarProps) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadImage(file, documentId);
+      editor.chain().focus().setImage({ src: url }).run();
+    } catch (err) {
+      console.error('[image upload]', (err as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   // Re-render the toolbar whenever the selection or document changes so the
   // active states stay accurate.
   const [, force] = useState(0);
@@ -21,6 +49,23 @@ export function Toolbar({ editor }: { editor: Editor }) {
       editor.off('transaction', rerender);
     };
   }, [editor]);
+
+  // Toggle a link on the current selection. Clicking with a link active removes
+  // it; otherwise we ask for a URL and apply it.
+  function setLink() {
+    if (editor.isActive('link')) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    const previous = editor.getAttributes('link').href as string | undefined;
+    const url = window.prompt('Link URL', previous || 'https://');
+    if (url === null) return; // cancelled
+    if (url.trim() === '') {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
+  }
 
   return (
     <div className="glass sticky top-[4.75rem] z-20 mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-1 rounded-2xl px-2 py-1.5">
@@ -47,6 +92,9 @@ export function Toolbar({ editor }: { editor: Editor }) {
         </Btn>
         <Btn label="Inline code" active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
           {'</>'}
+        </Btn>
+        <Btn label="Link" active={editor.isActive('link')} onClick={setLink}>
+          🔗
         </Btn>
       </Group>
 
@@ -76,7 +124,24 @@ export function Toolbar({ editor }: { editor: Editor }) {
         <Btn label="Code block" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
           {'{ }'}
         </Btn>
+        <Btn label="Checklist" active={editor.isActive('taskList')} onClick={() => editor.chain().focus().toggleTaskList().run()}>
+          ☑
+        </Btn>
+        <Btn label="Insert image" disabled={uploading} onClick={() => fileInput.current?.click()}>
+          {uploading ? '…' : '🖼'}
+        </Btn>
+        <input ref={fileInput} type="file" accept="image/*" hidden onChange={onPickImage} />
       </Group>
+
+      {/* Right-aligned utilities: export + distraction-free focus mode. */}
+      <div className="ml-auto flex items-center gap-0.5">
+        <Btn label="Export as Markdown" onClick={() => exportToMarkdown(editor.getHTML(), title)}>
+          ⇩
+        </Btn>
+        <Btn label={focusMode ? 'Exit focus mode' : 'Focus mode'} active={focusMode} onClick={onToggleFocus}>
+          {focusMode ? '🗗' : '⛶'}
+        </Btn>
+      </div>
     </div>
   );
 }

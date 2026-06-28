@@ -40,6 +40,14 @@ export function describeAuthError(message: string | undefined, action: AuthActio
     return 'That email address does not look valid.';
   }
 
+  // Supabase's built-in email service is rate-limited (a few emails/hour). This
+  // fires on sign-up when "Confirm email" is on and the quota is exhausted.
+  if (text.includes('email rate limit') || text.includes('email send') || text.includes('over_email_send')) {
+    return action === 'signup'
+      ? 'Too many confirmation emails were just sent. Please wait a few minutes and try again — or sign in if you already created an account.'
+      : 'Too many email requests right now. Please wait a few minutes and try again.';
+  }
+
   if (text.includes('rate limit') || text.includes('too many requests')) {
     return 'Too many attempts. Please wait a moment and try again.';
   }

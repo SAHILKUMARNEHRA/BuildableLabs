@@ -32,6 +32,7 @@ export default function DocumentEditorPage() {
 
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const collab = useCollaborativeDoc(id);
 
@@ -84,33 +85,39 @@ export default function DocumentEditorPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <AppHeader
-        center={<TitleEditor documentId={id} initialTitle={state.doc.title} />}
-      />
+      {!focusMode && (
+        <AppHeader center={<TitleEditor documentId={id} initialTitle={state.doc.title} />} />
+      )}
 
       {/* Live status row: connection, presence, and document actions. */}
-      <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4">
-        <div className="flex items-center gap-3">
-          <ConnectionStatus status={collab.status} online={collab.online} />
-          {collab.provider && <CollaboratorBar provider={collab.provider} />}
+      {!focusMode && (
+        <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3">
+            <ConnectionStatus status={collab.status} online={collab.online} />
+            {collab.provider && <CollaboratorBar provider={collab.provider} />}
+          </div>
+          <div className="flex items-center gap-2">
+            <ShareButton documentId={id} />
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="glass rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
+            >
+              History
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <ShareButton documentId={id} />
-          <button
-            onClick={() => setHistoryOpen(true)}
-            className="glass rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
-          >
-            History
-          </button>
-        </div>
-      </div>
+      )}
 
-      <main className="mt-6 px-4">
+      <main className={focusMode ? 'px-4 pt-10' : 'mt-6 px-4'}>
         {editorReady ? (
           <CollaborativeEditor
             ydoc={collab.ydoc!}
             provider={collab.provider!}
             user={{ name: user!.displayName, color: colorForUser(user!.id) }}
+            documentId={id}
+            title={state.doc.title}
+            focusMode={focusMode}
+            onToggleFocus={() => setFocusMode((v) => !v)}
           />
         ) : (
           <div className="mx-auto max-w-3xl">

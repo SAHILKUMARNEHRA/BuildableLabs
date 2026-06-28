@@ -20,6 +20,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -56,6 +57,19 @@ export default function DocumentsPage() {
           <DashboardActions onChange={load} />
         </div>
 
+        {!loading && !error && documents.length > 0 && (
+          <div className="relative mb-5 max-w-sm">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search documents…"
+              className="w-full rounded-full border border-white/70 bg-white/55 py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400
+                outline-none backdrop-blur transition focus:border-indigo-300 focus:bg-white/75 focus:ring-2 focus:ring-indigo-300/40"
+            />
+          </div>
+        )}
+
         {loading ? (
           <GridSkeleton />
         ) : error ? (
@@ -63,11 +77,24 @@ export default function DocumentsPage() {
         ) : documents.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {documents.map((doc) => (
-              <DocumentCard key={doc.id} doc={doc} ownerId={user?.id || ''} />
-            ))}
-          </div>
+          (() => {
+            const q = query.trim().toLowerCase();
+            const filtered = q ? documents.filter((d) => d.title.toLowerCase().includes(q)) : documents;
+            if (filtered.length === 0) {
+              return (
+                <p className="glass mt-2 rounded-2xl px-5 py-10 text-center text-sm text-slate-500">
+                  No documents match “{query}”.
+                </p>
+              );
+            }
+            return (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((doc) => (
+                  <DocumentCard key={doc.id} doc={doc} ownerId={user?.id || ''} onChange={load} />
+                ))}
+              </div>
+            );
+          })()
         )}
       </main>
     </div>

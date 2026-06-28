@@ -90,5 +90,8 @@ export const api = {
   joinDocument: (id: string) =>
     request<{ joined: boolean }>(`/api/documents/${id}/join`, { method: 'POST' }),
 
+  deleteDocument: (id: string) =>
+    request<{ deleted: boolean }>(`/api/documents/${id}`, { method: 'DELETE' }),
+
   getHistory: (id: string) => request<{ snapshots: SnapshotMeta[] }>(`/api/documents/${id}/history`),
 };

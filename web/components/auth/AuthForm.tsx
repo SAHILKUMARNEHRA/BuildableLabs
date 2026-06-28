@@ -106,8 +106,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <GlassCard strong className="w-full max-w-md animate-fade-up p-8 sm:p-10">
       <div className="mb-7 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
-          ✦
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-3xl font-black lowercase text-white shadow-lg shadow-indigo-500/30">
+          b
         </div>
         <h1 className="text-2xl font-bold text-slate-800">
           {isSignup ? 'Create your account' : 'Welcome back'}
