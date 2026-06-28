@@ -15,7 +15,7 @@ import {
 const SAVE_DEBOUNCE_MS = 2000;
 
 // Minimum gap between two history snapshots for the same document.
-const SNAPSHOT_INTERVAL_MS = 60_000;
+const SNAPSHOT_INTERVAL_MS = 30_000;
 
 /**
  * A Room is the live, in-memory representation of one document while at least
@@ -42,6 +42,9 @@ export class Room {
     this.saveTimer = null;
     this.lastSnapshotAt = 0;
     this.dirty = false;
+    // User id of whoever made the most recent edit, used to attribute the
+    // final snapshot taken when the room closes.
+    this.lastEditorId = null;
 
     // Resolves once the persisted state has been loaded into this.doc.
     this.ready = this.#load();
@@ -63,6 +66,9 @@ export class Room {
 
     // Loading persisted state should not immediately mark the doc dirty.
     if (origin === 'persistence') return;
+
+    // The origin is the editing user's socket (see ws/server.js).
+    if (typeof origin?.userId === 'string') this.lastEditorId = origin.userId;
 
     this.dirty = true;
     this.#scheduleSave();
@@ -125,6 +131,10 @@ export class Room {
   }
 
   async dispose() {
+    // Capture a final version on close so the last edits are always in history.
+    if (this.dirty || this.lastEditorId) {
+      await saveSnapshot(this.documentId, this.doc, this.lastEditorId);
+    }
     await this.flush();
     this.doc.destroy();
   }

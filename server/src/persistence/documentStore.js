@@ -76,6 +76,36 @@ export async function deleteDocumentState(documentId) {
 }
 
 /**
+ * Decodes a base64 Yjs snapshot back into the document's plain text, so the
+ * history panel can show what the document said at each version (and diff
+ * consecutive versions). Returns '' if the snapshot can't be read.
+ */
+export function decodeSnapshotText(base64) {
+  try {
+    const update = new Uint8Array(Buffer.from(base64, 'base64'));
+    const doc = new Y.Doc();
+    Y.applyUpdate(doc, update);
+    const xmlString = doc.getXmlFragment('default').toString();
+    doc.destroy();
+
+    return xmlString
+      // Block boundaries become line breaks so paragraphs don't run together.
+      .replace(/<\/(paragraph|heading|listItem|blockquote|codeBlock|taskItem)>/g, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Stores a history snapshot so the document timeline can be browsed later.
  * Kept separate from the "latest state" save so we control how often history
  * grows (see the room's snapshot scheduling).

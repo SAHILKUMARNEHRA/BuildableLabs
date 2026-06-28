@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { supabase } from '../config/supabase.js';
 import { requireAuth } from '../auth/verifyToken.js';
 import { canAccessDocument } from '../persistence/access.js';
-import { deleteDocumentState } from '../persistence/documentStore.js';
+import { deleteDocumentState, decodeSnapshotText } from '../persistence/documentStore.js';
 
 /**
  * REST API for everything that is not real-time editing:
@@ -211,7 +211,13 @@ documentsRouter.post('/:id/images', async (req, res) => {
   res.status(201).json({ url: data.publicUrl });
 });
 
-/** GET /api/documents/:id/history -> list snapshots, newest first. */
+/**
+ * GET /api/documents/:id/history -> the version timeline, newest first.
+ *
+ * Each version includes who made the edit that produced it (resolved to a
+ * display name + colour) and the document's plain text at that point, so the
+ * client can show "Alice — 2:14 PM" and diff what changed between versions.
+ */
 documentsRouter.get('/:id/history', async (req, res) => {
   const allowed = await canAccessDocument(req.params.id, req.user.id);
   if (!allowed) {
@@ -220,14 +226,43 @@ documentsRouter.get('/:id/history', async (req, res) => {
 
   const { data, error } = await supabase
     .from('document_snapshots')
-    .select('id, created_at, created_by')
+    .select('id, created_at, created_by, state')
     .eq('document_id', req.params.id)
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .order('created_at', { ascending: true }) // chronological so we can diff forward
+    .limit(100);
 
   if (error) {
     return res.status(500).json({ error: 'history_failed', message: error.message });
   }
 
-  res.json({ snapshots: data || [] });
+  const rows = data || [];
+
+  // Resolve author names/colours in one query.
+  const authorIds = [...new Set(rows.map((r) => r.created_by).filter(Boolean))];
+  const authors = new Map();
+  if (authorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, email, avatar_color')
+      .in('id', authorIds);
+    (profiles || []).forEach((p) =>
+      authors.set(p.id, {
+        name: p.display_name || (p.email ? p.email.split('@')[0] : 'Someone'),
+        color: p.avatar_color || '#6366f1',
+      })
+    );
+  }
+
+  const snapshots = rows.map((row, i) => ({
+    id: row.id,
+    version: i + 1,
+    created_at: row.created_at,
+    author: row.created_by ? authors.get(row.created_by) || null : null,
+    text: decodeSnapshotText(row.state),
+  }));
+
+  // Return newest first for display.
+  snapshots.reverse();
+
+  res.json({ snapshots });
 });

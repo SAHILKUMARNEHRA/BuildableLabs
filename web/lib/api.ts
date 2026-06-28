@@ -65,8 +65,10 @@ export interface DocumentMeta {
 
 export interface SnapshotMeta {
   id: string;
+  version: number;
   created_at: string;
-  created_by: string | null;
+  author: { name: string; color: string } | null;
+  text: string;
 }
 
 // --- Endpoints --------------------------------------------------------------

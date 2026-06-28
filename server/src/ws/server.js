@@ -75,6 +75,10 @@ export function attachWebSocketServer(httpServer) {
 
 async function handleConnection(ws, { documentId, user }) {
   ws.isAlive = true;
+  // Stamp the user on the socket. Yjs uses the socket as the "origin" of every
+  // update it applies, so the room can attribute each change (and the history
+  // snapshot it triggers) to the person who made it.
+  ws.userId = user.id;
   ws.on('pong', () => {
     ws.isAlive = true;
   });
