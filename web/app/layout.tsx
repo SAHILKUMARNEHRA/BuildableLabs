@@ -5,8 +5,11 @@ import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://buildable-labs.vercel.app'),
   title: 'CoWrite — Collaborative Document Editor',
   description: 'A real-time collaborative document editor where multiple people edit together, with live cursors, presence, offline support, and a liquid-glass interface.',
+  applicationName: 'CoWrite',
+  icons: { icon: '/icon.svg' },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
