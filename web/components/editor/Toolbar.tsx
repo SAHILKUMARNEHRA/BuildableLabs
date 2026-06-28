@@ -68,7 +68,7 @@ export function Toolbar({ editor, documentId, title, focusMode, onToggleFocus }:
   }
 
   return (
-    <div className="sticky top-[4.75rem] z-20 mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/85 px-2 py-1.5 shadow-xl backdrop-blur-xl">
+    <div className="glass sticky top-[4.75rem] z-20 mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-1 rounded-2xl px-2 py-1.5">
       <Group>
         <Btn label="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
           <UndoIcon />
@@ -151,7 +151,7 @@ function Group({ children }: { children: React.ReactNode }) {
 }
 
 function Divider() {
-  return <span className="mx-1 h-5 w-px bg-white/15" />;
+  return <span className="mx-1 h-5 w-px bg-slate-400/50" />;
 }
 
 /** Horizontal "undo" curved arrow (points left). */
@@ -191,9 +191,9 @@ function Btn({ children, label, onClick, active = false, disabled = false }: Btn
       aria-pressed={active}
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm transition
-        disabled:cursor-not-allowed disabled:opacity-25
-        ${active ? 'bg-indigo-500 text-white shadow' : 'text-slate-200 hover:bg-white/15 hover:text-white'}`}
+      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-semibold transition
+        disabled:cursor-not-allowed disabled:opacity-40
+        ${active ? 'bg-indigo-500 text-white shadow' : 'text-slate-800 hover:bg-white/70 hover:text-slate-900'}`}
     >
       {children}
     </button>
