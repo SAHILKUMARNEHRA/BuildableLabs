@@ -7,6 +7,11 @@ keeps working offline.
 
 Built for the BuildableLabs Full-Stack Engineer assignment.
 
+**🔗 Live demo:** https://buildable-labs.vercel.app
+&nbsp;·&nbsp; Sign up, sign in with Google, or open a document link in two browser
+windows to see real-time collaboration. (Frontend on Vercel, custom WebSocket
+backend on Render.)
+
 > **Setup in 15 minutes:** follow **[SETUP.md](SETUP.md)** for click-by-click
 > Supabase + Google OAuth + run instructions.
 > **Deploying?** See **[DEPLOY.md](DEPLOY.md)** (Vercel + Render).
