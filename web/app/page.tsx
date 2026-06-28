@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { LogoMark } from '@/components/ui/Logo';
 
 /**
  * Landing page. Signed-in users are forwarded straight to their documents;
@@ -31,9 +32,11 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-16">
       <div className="w-full max-w-3xl animate-fade-up text-center">
-        <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-4xl font-black lowercase text-white shadow-lg shadow-indigo-500/30">
-          b
-        </div>
+        <LogoMark
+          className="mx-auto mb-7 h-16 w-16 shadow-lg shadow-indigo-500/30"
+          iconClassName="h-9 w-9"
+          rounded="rounded-2xl"
+        />
 
         <h1 className="text-balance text-5xl font-bold tracking-tight text-slate-800 sm:text-6xl">
           Write together,

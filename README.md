@@ -1,4 +1,4 @@
-# Fluid — Real-time Collaborative Document Editor
+# CoWrite — Real-time Collaborative Document Editor
 
 A real-time document editor where multiple people can write in the same
 document at once. Edits appear instantly for everyone, every keystroke is

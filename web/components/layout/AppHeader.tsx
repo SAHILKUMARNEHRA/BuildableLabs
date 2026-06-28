@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { colorForUser, initialsFor } from '@/lib/collab/colors';
 import { useToast } from '@/components/ui/Toast';
+import { LogoMark } from '@/components/ui/Logo';
 import type { ReactNode } from 'react';
 
 /**
@@ -27,10 +28,8 @@ export function AppHeader({ center }: { center?: ReactNode }) {
     <header className="sticky top-0 z-30 px-4 pt-4">
       <div className="glass mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl px-4 py-2.5 sm:px-5">
         <Link href="/documents" className="flex items-center gap-2 font-bold text-slate-800">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-lg font-black lowercase text-white shadow-sm">
-            b
-          </span>
-          <span className="hidden sm:inline">Fluid</span>
+          <LogoMark className="h-8 w-8" iconClassName="h-5 w-5" />
+          <span className="hidden sm:inline">CoWrite</span>
         </Link>
 
         <div className="min-w-0 flex-1 px-2">{center}</div>

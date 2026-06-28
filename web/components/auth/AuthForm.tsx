@@ -8,6 +8,7 @@ import { describeAuthError, type AuthAction } from '@/lib/auth/errors';
 import { useToast } from '@/components/ui/Toast';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { LogoMark } from '@/components/ui/Logo';
 import { GoogleButton } from './GoogleButton';
 
 interface AuthFormProps {
@@ -106,9 +107,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <GlassCard strong className="w-full max-w-md animate-fade-up p-8 sm:p-10">
       <div className="mb-7 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-3xl font-black lowercase text-white shadow-lg shadow-indigo-500/30">
-          b
-        </div>
+        <LogoMark
+          className="mx-auto mb-4 h-14 w-14 shadow-lg shadow-indigo-500/30"
+          iconClassName="h-8 w-8"
+          rounded="rounded-2xl"
+        />
         <h1 className="text-2xl font-bold text-slate-800">
           {isSignup ? 'Create your account' : 'Welcome back'}
         </h1>

@@ -5,8 +5,8 @@ import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
-  title: 'Fluid — Collaborative Docs',
-  description: 'A real-time collaborative document editor with a liquid-glass interface.',
+  title: 'CoWrite — Collaborative Document Editor',
+  description: 'A real-time collaborative document editor where multiple people edit together, with live cursors, presence, offline support, and a liquid-glass interface.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
