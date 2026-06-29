@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { api, ApiError, type DocumentMeta } from '@/lib/api';
+import { api, ApiError, type DocumentMeta, type ShareRole } from '@/lib/api';
 import { colorForUser } from '@/lib/collab/colors';
+import { getTemplate } from '@/lib/editor/templates';
 import { useCollaborativeDoc } from '@/lib/collab/useCollaborativeDoc';
 import { useToast } from '@/components/ui/Toast';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -13,6 +14,8 @@ import { CollaborativeEditor } from '@/components/editor/Editor';
 import { CollaboratorBar } from '@/components/editor/CollaboratorBar';
 import { ConnectionStatus } from '@/components/editor/ConnectionStatus';
 import { HistoryPanel } from '@/components/editor/HistoryPanel';
+import { ShareDialog } from '@/components/editor/ShareDialog';
+import { CommentsPanel } from '@/components/editor/CommentsPanel';
 
 type LoadState =
   | { kind: 'loading' }
@@ -30,8 +33,14 @@ export default function DocumentEditorPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+  const templateKey = searchParams.get('t');
+  const templateHtml = getTemplate(templateKey)?.html || undefined;
+
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
 
   const collab = useCollaborativeDoc(id);
@@ -82,11 +91,16 @@ export default function DocumentEditorPage() {
   }
 
   const editorReady = collab.ydoc && collab.provider;
+  const myRole: ShareRole = state.doc.my_role || 'editor';
+  const canEdit = myRole === 'editor';
+  const canComment = myRole === 'editor' || myRole === 'commenter';
+  // Only seed a template into a doc I can edit and that I just created.
+  const seedTemplate = canEdit ? templateHtml : undefined;
 
   return (
     <div className="min-h-screen pb-24">
       {!focusMode && (
-        <AppHeader center={<TitleEditor documentId={id} initialTitle={state.doc.title} />} />
+        <AppHeader center={<TitleEditor documentId={id} initialTitle={state.doc.title} readOnly={!canEdit} />} />
       )}
 
       {/* Live status row: connection, presence, and document actions. */}
@@ -95,9 +109,21 @@ export default function DocumentEditorPage() {
           <div className="flex items-center gap-3">
             <ConnectionStatus status={collab.status} online={collab.online} />
             {collab.provider && <CollaboratorBar provider={collab.provider} />}
+            {!canEdit && <RoleBadge role={myRole} />}
           </div>
           <div className="flex items-center gap-2">
-            <ShareButton documentId={id} />
+            <button
+              onClick={() => setShareOpen(true)}
+              className="glass glass-sheen rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
+            >
+              Share
+            </button>
+            <button
+              onClick={() => setCommentsOpen(true)}
+              className="glass rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
+            >
+              Comments
+            </button>
             <button
               onClick={() => setHistoryOpen(true)}
               className="glass rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
@@ -118,6 +144,8 @@ export default function DocumentEditorPage() {
             title={state.doc.title}
             focusMode={focusMode}
             onToggleFocus={() => setFocusMode((v) => !v)}
+            editable={canEdit}
+            templateHtml={seedTemplate}
           />
         ) : (
           <div className="mx-auto max-w-3xl">
@@ -127,17 +155,40 @@ export default function DocumentEditorPage() {
       </main>
 
       {historyOpen && <HistoryPanel documentId={id} onClose={() => setHistoryOpen(false)} />}
+      {commentsOpen && (
+        <CommentsPanel documentId={id} canComment={canComment} onClose={() => setCommentsOpen(false)} />
+      )}
+      {shareOpen && (
+        <ShareDialog
+          documentId={id}
+          isOwner={Boolean(state.doc.is_owner)}
+          initialRole={state.doc.link_role || 'editor'}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
+}
+
+function RoleBadge({ role }: { role: ShareRole }) {
+  const map = {
+    viewer: { label: 'View only', cls: 'bg-slate-100 text-slate-600' },
+    commenter: { label: 'Comment only', cls: 'bg-amber-100 text-amber-700' },
+    editor: { label: 'Editor', cls: 'bg-emerald-100 text-emerald-700' },
+  } as const;
+  const m = map[role];
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${m.cls}`}>{m.label}</span>;
 }
 
 /** Inline, debounced-on-blur title editing in the header. */
 function TitleEditor({
   documentId,
   initialTitle,
+  readOnly = false,
 }: {
   documentId: string;
   initialTitle: string;
+  readOnly?: boolean;
 }) {
   const { toast } = useToast();
   const [title, setTitle] = useState(initialTitle);
@@ -158,6 +209,14 @@ function TitleEditor({
     }
   }
 
+  if (readOnly) {
+    return (
+      <div className="w-full truncate px-2 py-1 text-center text-base font-semibold text-slate-800" aria-label="Document title">
+        {title}
+      </div>
+    );
+  }
+
   return (
     <input
       value={title}
@@ -174,32 +233,6 @@ function TitleEditor({
 }
 
 /** Copies the shareable document link to the clipboard. */
-function ShareButton({ documentId }: { documentId: string }) {
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
-
-  async function share() {
-    const url = `${window.location.origin}/documents/${documentId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast('Share link copied to clipboard.', 'success');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast('Could not copy the link.', 'error');
-    }
-  }
-
-  return (
-    <button
-      onClick={share}
-      className="glass glass-sheen rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/60"
-    >
-      {copied ? 'Copied ✓' : 'Share'}
-    </button>
-  );
-}
-
 /** Shown when a user opens a shared link they have not joined yet. */
 function JoinGate({ documentId, onJoined }: { documentId: string; onJoined: () => void }) {
   const { toast } = useToast();

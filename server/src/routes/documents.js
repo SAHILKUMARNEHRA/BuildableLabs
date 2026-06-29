@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../config/supabase.js';
 import { requireAuth } from '../auth/verifyToken.js';
-import { canAccessDocument } from '../persistence/access.js';
+import { canAccessDocument, getUserRole } from '../persistence/access.js';
 import { deleteDocumentState, decodeSnapshotText } from '../persistence/documentStore.js';
 
 /**
@@ -75,17 +75,109 @@ documentsRouter.get('/:id', async (req, res) => {
     return res.status(403).json({ error: 'forbidden', message: 'You do not have access to this document.' });
   }
 
-  const { data, error } = await supabase
+  // Tolerate the link_role column not existing yet (migration not applied):
+  // fall back to a base select and default the role to 'editor'.
+  let { data, error } = await supabase
     .from('documents')
-    .select('id, title, owner_id, created_at, updated_at')
+    .select('id, title, owner_id, created_at, updated_at, link_role')
     .eq('id', req.params.id)
     .single();
+
+  if (error) {
+    ({ data, error } = await supabase
+      .from('documents')
+      .select('id, title, owner_id, created_at, updated_at')
+      .eq('id', req.params.id)
+      .single());
+    if (data) data.link_role = 'editor';
+  }
 
   if (error) {
     return res.status(404).json({ error: 'not_found', message: 'Document not found.' });
   }
 
-  res.json({ document: data });
+  const isOwner = data.owner_id === req.user.id;
+  const myRole = isOwner ? 'editor' : data.link_role || 'editor';
+
+  res.json({ document: { ...data, is_owner: isOwner, my_role: myRole } });
+});
+
+/** PATCH /api/documents/:id/access -> change the share link's role (owner only). */
+documentsRouter.patch('/:id/access', async (req, res) => {
+  const role = req.body?.link_role;
+  if (!['editor', 'commenter', 'viewer'].includes(role)) {
+    return res.status(400).json({ error: 'invalid_role', message: 'Role must be editor, commenter or viewer.' });
+  }
+
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('owner_id')
+    .eq('id', req.params.id)
+    .maybeSingle();
+
+  if (!doc) return res.status(404).json({ error: 'not_found', message: 'Document not found.' });
+  if (doc.owner_id !== req.user.id) {
+    return res.status(403).json({ error: 'forbidden', message: 'Only the owner can change sharing access.' });
+  }
+
+  const { error } = await supabase
+    .from('documents')
+    .update({ link_role: role })
+    .eq('id', req.params.id);
+
+  if (error) return res.status(500).json({ error: 'access_failed', message: error.message });
+  res.json({ link_role: role });
+});
+
+/** GET /api/documents/:id/comments -> the comment thread. */
+documentsRouter.get('/:id/comments', async (req, res) => {
+  const allowed = await canAccessDocument(req.params.id, req.user.id);
+  if (!allowed) {
+    return res.status(403).json({ error: 'forbidden', message: 'You do not have access to this document.' });
+  }
+
+  const { data, error } = await supabase
+    .from('document_comments')
+    .select('id, body, author_name, created_at, user_id')
+    .eq('document_id', req.params.id)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (error) return res.status(500).json({ error: 'comments_failed', message: error.message });
+  res.json({ comments: data || [] });
+});
+
+/** POST /api/documents/:id/comments -> add a comment (editor or commenter only). */
+documentsRouter.post('/:id/comments', async (req, res) => {
+  const role = await getUserRole(req.params.id, req.user.id);
+  if (!role) {
+    return res.status(403).json({ error: 'forbidden', message: 'You do not have access to this document.' });
+  }
+  if (role === 'viewer') {
+    return res.status(403).json({ error: 'read_only', message: 'Viewers cannot comment. Ask the owner for comment access.' });
+  }
+
+  const body = (req.body?.body || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty', message: 'Comment cannot be empty.' });
+  if (body.length > 2000) return res.status(400).json({ error: 'too_long', message: 'Comment is too long.' });
+
+  // Resolve a friendly author name from the profile.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name, email')
+    .eq('id', req.user.id)
+    .maybeSingle();
+  const authorName =
+    profile?.display_name || (profile?.email ? profile.email.split('@')[0] : 'Someone');
+
+  const { data, error } = await supabase
+    .from('document_comments')
+    .insert({ document_id: req.params.id, user_id: req.user.id, author_name: authorName, body })
+    .select('id, body, author_name, created_at, user_id')
+    .single();
+
+  if (error) return res.status(500).json({ error: 'comment_failed', message: error.message });
+  res.status(201).json({ comment: data });
 });
 
 /** PATCH /api/documents/:id -> rename. */

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LogoMark } from '@/components/ui/Logo';
+import { DocPreview } from '@/components/landing/DocPreview';
 
 /**
  * Landing page. Signed-in users are forwarded straight to their documents;
@@ -63,6 +64,11 @@ export default function HomePage() {
           >
             Sign in
           </Link>
+        </div>
+
+        {/* Live editor preview */}
+        <div className="mt-14 flex justify-center px-2">
+          <DocPreview />
         </div>
 
         <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-3">

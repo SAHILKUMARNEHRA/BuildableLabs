@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -25,6 +25,10 @@ interface EditorProps {
   title: string;
   focusMode: boolean;
   onToggleFocus: () => void;
+  /** When false (viewer/commenter) the document is read-only. */
+  editable: boolean;
+  /** Optional starting HTML when creating from a template (seeded once). */
+  templateHtml?: string;
 }
 
 /**
@@ -47,6 +51,8 @@ export function CollaborativeEditor({
   title,
   focusMode,
   onToggleFocus,
+  editable,
+  templateHtml,
 }: EditorProps) {
   // Holds the editor so the paste/drop handlers (defined inside the editor
   // config, before `editor` exists) can reach it once it is created.
@@ -69,6 +75,7 @@ export function CollaborativeEditor({
       // Required for SSR frameworks: render only after mount to avoid hydration
       // mismatches between server and client.
       immediatelyRender: false,
+      editable,
       extensions: [
         StarterKit.configure({ history: false }),
         Placeholder.configure({
@@ -102,15 +109,47 @@ export function CollaborativeEditor({
 
   editorRef.current = editor;
 
+  // Keep the editable flag in sync if the role/connection changes.
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editor, editable]);
+
+  // Seed template content once, only into a brand-new (empty) document, after
+  // the realtime connection has synced — so we never overwrite existing text.
+  // We check the shared Yjs fragment (not just the editor) to be sure the doc
+  // is truly empty, and add a fallback timer in case the sync event is missed.
+  useEffect(() => {
+    if (!editor || !templateHtml) return;
+    let done = false;
+    const fragment = ydoc.getXmlFragment('default');
+    const seed = () => {
+      if (done || editor.isDestroyed) return;
+      if (fragment.length === 0 && editor.isEmpty) {
+        done = true;
+        editor.commands.setContent(templateHtml, true);
+      }
+    };
+    const onSync = (isSynced: boolean) => {
+      if (isSynced) setTimeout(seed, 60);
+    };
+    provider.on('sync', onSync);
+    if (provider.synced) setTimeout(seed, 60);
+    const fallback = setTimeout(seed, 1200);
+    return () => {
+      provider.off('sync', onSync);
+      clearTimeout(fallback);
+    };
+  }, [editor, provider, ydoc, templateHtml]);
+
   if (!editor) {
     return <div className="h-64 animate-pulse rounded-2xl bg-white/30" />;
   }
 
   return (
     <div>
-      <SelectionBubbleMenu editor={editor} />
+      {editable && <SelectionBubbleMenu editor={editor} />}
 
-      {!focusMode && (
+      {editable && !focusMode && (
         <Toolbar
           editor={editor}
           documentId={documentId}
