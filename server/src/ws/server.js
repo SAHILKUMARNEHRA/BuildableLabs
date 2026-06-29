@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { URL } from 'node:url';
 import { verifyToken } from '../auth/verifyToken.js';
-import { canAccessDocument, getUserRole } from '../persistence/access.js';
+import { canAccessDocument } from '../persistence/access.js';
 import { roomManager } from './room.js';
 import {
   handleMessage,
@@ -79,8 +79,6 @@ async function handleConnection(ws, { documentId, user }) {
   // update it applies, so the room can attribute each change (and the history
   // snapshot it triggers) to the person who made it.
   ws.userId = user.id;
-  // Effective role decides whether this socket may write to the document.
-  ws.role = (await getUserRole(documentId, user.id)) || 'viewer';
   ws.on('pong', () => {
     ws.isAlive = true;
   });

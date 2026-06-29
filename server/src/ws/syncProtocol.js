@@ -69,26 +69,11 @@ export function handleMessage(message, conn, doc, awareness) {
 
   switch (messageType) {
     case MESSAGE_SYNC: {
-      // Role enforcement: viewers and commenters may receive the document but
-      // must not change it. We read the message type and, for a write
-      // (sync step 2 / update), drop it unless the socket is an editor. Reads
-      // (sync step 1, a request for state) are always answered.
-      const syncType = decoding.readVarUint(decoder);
-      const isWrite = syncType === syncProtocol.messageYjsSyncStep2 || syncType === syncProtocol.messageYjsUpdate;
-      if (isWrite && conn.role && conn.role !== 'editor') {
-        return; // silently ignore edits from non-editors
-      }
-
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, MESSAGE_SYNC);
-      // Re-dispatch by sync type now that we've consumed it.
-      if (syncType === syncProtocol.messageYjsSyncStep1) {
-        syncProtocol.readSyncStep1(decoder, encoder, doc);
-      } else if (syncType === syncProtocol.messageYjsSyncStep2) {
-        syncProtocol.readSyncStep2(decoder, doc, conn);
-      } else if (syncType === syncProtocol.messageYjsUpdate) {
-        syncProtocol.readUpdate(decoder, doc, conn);
-      }
+      // readSyncMessage applies incoming updates to `doc` and may write a
+      // reply (e.g. the updates the client still needs) into `encoder`.
+      syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
       if (encoding.length(encoder) > 1) {
         send(conn, encoding.toUint8Array(encoder));
       }

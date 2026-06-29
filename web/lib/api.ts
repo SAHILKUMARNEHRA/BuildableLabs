@@ -55,25 +55,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 // --- Types -----------------------------------------------------------------
-export type ShareRole = 'editor' | 'commenter' | 'viewer';
-
 export interface DocumentMeta {
   id: string;
   title: string;
   owner_id: string;
   created_at: string;
   updated_at: string;
-  link_role?: ShareRole;
-  my_role?: ShareRole;
-  is_owner?: boolean;
-}
-
-export interface Comment {
-  id: string;
-  body: string;
-  author_name: string | null;
-  created_at: string;
-  user_id: string | null;
 }
 
 export interface SnapshotMeta {
@@ -109,18 +96,4 @@ export const api = {
     request<{ deleted: boolean }>(`/api/documents/${id}`, { method: 'DELETE' }),
 
   getHistory: (id: string) => request<{ snapshots: SnapshotMeta[] }>(`/api/documents/${id}/history`),
-
-  setAccess: (id: string, link_role: ShareRole) =>
-    request<{ link_role: ShareRole }>(`/api/documents/${id}/access`, {
-      method: 'PATCH',
-      body: JSON.stringify({ link_role }),
-    }),
-
-  getComments: (id: string) => request<{ comments: Comment[] }>(`/api/documents/${id}/comments`),
-
-  addComment: (id: string, body: string) =>
-    request<{ comment: Comment }>(`/api/documents/${id}/comments`, {
-      method: 'POST',
-      body: JSON.stringify({ body }),
-    }),
 };

@@ -37,6 +37,8 @@ backend on Render.)
 - **Rich editing** — bubble menu on selection, links, checklists, image upload
   to Supabase Storage, word count, live save status, focus mode, and one-click
   **export to Markdown**.
+- **Document templates** — start from Blank, Letter, Meeting notes, Resume,
+  Project plan, or To-do list (the template content is seeded into the doc).
 - **Document management** — create, rename, delete, search, and share by link.
 
 ---

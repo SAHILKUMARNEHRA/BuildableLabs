@@ -25,8 +25,6 @@ interface EditorProps {
   title: string;
   focusMode: boolean;
   onToggleFocus: () => void;
-  /** When false (viewer/commenter) the document is read-only. */
-  editable: boolean;
   /** Optional starting HTML when creating from a template (seeded once). */
   templateHtml?: string;
 }
@@ -51,7 +49,6 @@ export function CollaborativeEditor({
   title,
   focusMode,
   onToggleFocus,
-  editable,
   templateHtml,
 }: EditorProps) {
   // Holds the editor so the paste/drop handlers (defined inside the editor
@@ -75,7 +72,6 @@ export function CollaborativeEditor({
       // Required for SSR frameworks: render only after mount to avoid hydration
       // mismatches between server and client.
       immediatelyRender: false,
-      editable,
       extensions: [
         StarterKit.configure({ history: false }),
         Placeholder.configure({
@@ -108,11 +104,6 @@ export function CollaborativeEditor({
   );
 
   editorRef.current = editor;
-
-  // Keep the editable flag in sync if the role/connection changes.
-  useEffect(() => {
-    editor?.setEditable(editable);
-  }, [editor, editable]);
 
   // Seed template content once, only into a brand-new (empty) document, after
   // the realtime connection has synced — so we never overwrite existing text.
@@ -147,9 +138,9 @@ export function CollaborativeEditor({
 
   return (
     <div>
-      {editable && <SelectionBubbleMenu editor={editor} />}
+      <SelectionBubbleMenu editor={editor} />
 
-      {editable && !focusMode && (
+      {!focusMode && (
         <Toolbar
           editor={editor}
           documentId={documentId}
